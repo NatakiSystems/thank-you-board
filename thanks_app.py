@@ -1,29 +1,42 @@
-import streamlit as st
-import pandas as pd
-import os
 from datetime import datetime
-
-DB_FILE = "instructor_thanks.csv"
-
-# Initialize data storage
-if not os.path.exists(DB_FILE):
-    df_init = pd.DataFrame(columns=["Timestamp", "Instructor", "Sender", "Location", "Superpower", "Message"])
-    df_init.to_csv(DB_FILE, index=False)
+import pandas as pd
+import streamlit as st
+from streamlit_gsheets import GSheetsConnection
 
 st.set_page_config(
-    page_title="IF'26 Thank You Jose & Alex! 🎓",
-    page_icon="🎉",
-    layout="wide"
+    page_title="IF'26 Thank You Jose & Alex! 🎓", page_icon="🎉", layout="wide"
 )
 
-# Trigger celebratory animations on reload
+# Connect to Google Sheets
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+
+def load_notes():
+    try:
+        data = conn.read(ttl=5)
+        return data.dropna(how="all")
+    except Exception:
+        return pd.DataFrame(
+            columns=[
+                "Timestamp",
+                "Instructor",
+                "Sender",
+                "Location",
+                "Superpower",
+                "Message",
+            ]
+        )
+
+
+# Celebration trigger on rerun
 if st.session_state.get("show_celebration", False):
     st.balloons()
     st.toast("🎉 Your celebration note is live on the wall!", icon="🎈")
     st.session_state["show_celebration"] = False
 
-# High-contrast, responsive CSS styling
-st.markdown("""
+# UI Styling
+st.markdown(
+    """
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap');
 
@@ -41,7 +54,7 @@ st.markdown("""
     }
 
     @media print {
-        header, footer, .stButton, .stForm, [data-testid="stSidebar"], .no-print, .action-footer {
+        header, footer, .stButton, .stForm, [data-testid="stSidebar"], .no-print {
             display: none !important;
         }
         .block-container {
@@ -57,7 +70,6 @@ st.markdown("""
         }
     }
 
-    /* Hero Banner */
     .hero-banner {
         background: linear-gradient(135deg, #4338ca 0%, #6366f1 35%, #8b5cf6 70%, #ec4899 100%);
         border-radius: clamp(18px, 3vw, 28px);
@@ -100,7 +112,6 @@ st.markdown("""
         color: rgba(255, 255, 255, 0.96);
     }
 
-    /* Profile Cards */
     .profile-card {
         border-radius: 18px;
         padding: clamp(1.2rem, 3vw, 1.6rem);
@@ -160,7 +171,6 @@ st.markdown("""
         margin: 1.2rem 0 0.8rem 0;
     }
 
-    /* Wall Thank-You Cards */
     .thank-you-card {
         background: #ffffff;
         border-radius: 18px;
@@ -238,7 +248,6 @@ st.markdown("""
         color: #1e293b;
     }
 
-    /* Print Tip Box */
     .print-tip-box {
         background: #f8fafc;
         border: 1.5px solid #cbd5e1;
@@ -264,10 +273,13 @@ st.markdown("""
         border-radius: 5px;
     }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # Hero Banner
-st.markdown("""
+st.markdown(
+    """
 <div class="hero-banner">
     <div class="hero-tag">✨ IF'26 AI Business Solutions Engineering Cohort</div>
     <h1 class="hero-title">Thank You, Jose & Alex! 🎓 💻</h1>
@@ -277,12 +289,15 @@ st.markdown("""
         here is the love and gratitude from your Atlanta 🍑 and Los Angeles 🌴 fellows!
     </p>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
-# Teacher Profiles
+# Teacher Spotlight Cards
 col_jose, col_alex = st.columns(2)
 with col_jose:
-    st.markdown("""
+    st.markdown(
+        """
     <div class="profile-card card-jose">
         <span class="role-badge badge-jose">Lead Instructor • New York 🗽</span>
         <div class="profile-name">🗽 Jose</div>
@@ -290,10 +305,13 @@ with col_jose:
             Architecture Guide • Code Mentor • Champion of Student Growth 🚀
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 with col_alex:
-    st.markdown("""
+    st.markdown(
+        """
     <div class="profile-card card-alex">
         <span class="role-badge badge-alex">Teaching Assistant (TA) • Los Angeles 🌴</span>
         <div class="profile-name">🌴 Alex</div>
@@ -301,10 +319,15 @@ with col_alex:
             Lab Support Hero • Debugging Expert • Patient Problem-Solver 💡
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
-# Submission Form
-st.markdown('<div class="form-header">💌 Add Your Note to the Celebration Board</div>', unsafe_allow_html=True)
+# Input Form
+st.markdown(
+    '<div class="form-header">💌 Add Your Note to the Celebration Board</div>',
+    unsafe_allow_html=True,
+)
 
 with st.form("celebration_form", clear_on_submit=True):
     col_who, col_name, col_loc = st.columns([1.3, 1.4, 1.3])
@@ -312,14 +335,16 @@ with st.form("celebration_form", clear_on_submit=True):
     with col_who:
         instructor = st.selectbox(
             "Who are you celebrating? *",
-            ["Both Jose & Alex 🌟", "Jose (Lead Instructor) 🗽", "Alex (TA) 🌴"]
+            ["Both Jose & Alex 🌟", "Jose (Lead Instructor) 🗽", "Alex (TA) 🌴"],
         )
     with col_name:
-        sender = st.text_input("Your Name", placeholder="e.g., Maya Lin (or leave blank for Fellow)")
+        sender = st.text_input(
+            "Your Name", placeholder="e.g., Maya Lin (or leave blank for Fellow)"
+        )
     with col_loc:
         location = st.selectbox(
             "Fellow Cohort Location *",
-            ["Atlanta Cohort 🍑", "Los Angeles Cohort 🌴", "Other / Remote 🌐"]
+            ["Atlanta Cohort 🍑", "Los Angeles Cohort 🌴", "Other / Remote 🌐"],
         )
 
     superpower = st.selectbox(
@@ -330,34 +355,48 @@ with st.form("celebration_form", clear_on_submit=True):
             "🌱 Endless patience and encouraging energy",
             "🎯 Practical business & career guidance",
             "☕ Inspiring, fun classroom atmosphere",
-            "⭐ All of the above!"
-        ]
+            "⭐ All of the above!",
+        ],
     )
 
     message = st.text_area(
         "Your Message of Gratitude & Memories *",
         placeholder="Share a moment when Jose or Alex helped you overcome a blocker, an inspiring lecture, or well wishes for their future journeys...",
-        height=130
+        height=130,
     )
 
-    submitted = st.form_submit_button("Post Celebration Note 🎉", use_container_width=True)
+    submitted = st.form_submit_button(
+        "Post Celebration Note 🎉", use_container_width=True
+    )
 
     if submitted:
         if message.strip():
             clean_instructor = (
-                "Jose & Alex" if "Both" in instructor
-                else "Jose" if "Jose" in instructor
+                "Jose & Alex"
+                if "Both" in instructor
+                else "Jose"
+                if "Jose" in instructor
                 else "Alex"
             )
-            new_entry = pd.DataFrame([{
-                "Timestamp": datetime.now().strftime("%b %d, %Y"),
-                "Instructor": clean_instructor,
-                "Sender": sender.strip() if sender.strip() else "Grateful Fellow",
-                "Location": location,
-                "Superpower": superpower,
-                "Message": message.strip()
-            }])
-            new_entry.to_csv(DB_FILE, mode="a", header=False, index=False)
+            existing_df = load_notes()
+            new_entry = pd.DataFrame(
+                [
+                    {
+                        "Timestamp": datetime.now().strftime("%b %d, %Y"),
+                        "Instructor": clean_instructor,
+                        "Sender": sender.strip()
+                        if sender.strip()
+                        else "Grateful Fellow",
+                        "Location": location,
+                        "Superpower": superpower,
+                        "Message": message.strip(),
+                    }
+                ]
+            )
+
+            updated_df = pd.concat([existing_df, new_entry], ignore_index=True)
+            conn.update(data=updated_df)
+
             st.session_state["show_celebration"] = True
             st.rerun()
         else:
@@ -365,8 +404,8 @@ with st.form("celebration_form", clear_on_submit=True):
 
 st.divider()
 
-# Reading Wall
-df = pd.read_csv(DB_FILE)
+# Reading Wall Display
+df = load_notes()
 
 col_wall_title, col_filter = st.columns([1.8, 1.2])
 with col_wall_title:
@@ -375,10 +414,10 @@ with col_filter:
     filter_choice = st.selectbox(
         "Filter messages:",
         ["All Messages", "Jose & Alex", "Jose", "Alex"],
-        label_visibility="collapsed"
+        label_visibility="collapsed",
     )
 
-if not df.empty:
+if not df.empty and len(df) > 0:
     if filter_choice != "All Messages":
         view_df = df[df["Instructor"] == filter_choice]
     else:
@@ -390,10 +429,12 @@ if not df.empty:
         st.info(f"No notes specifically for {filter_choice} yet.")
     else:
         for _, row in view_df.iloc[::-1].iterrows():
-            loc_str = str(row.get('Location', ''))
+            loc_str = str(row.get("Location", ""))
             loc_badge = (
-                '<span class="tag-atl">Atlanta 🍑</span>' if "Atlanta" in loc_str
-                else '<span class="tag-la">Los Angeles 🌴</span>' if "Los Angeles" in loc_str
+                '<span class="tag-atl">Atlanta 🍑</span>'
+                if "Atlanta" in loc_str
+                else '<span class="tag-la">Los Angeles 🌴</span>'
+                if "Los Angeles" in loc_str
                 else '<span class="tag-recipient">Remote 🌐</span>'
             )
             superpower_html = (
@@ -402,22 +443,20 @@ if not df.empty:
                 else ""
             )
 
-            # Left-aligned HTML without 4-space markdown indentations
             card_html = (
                 f'<div class="thank-you-card">'
                 f'<div class="card-meta">'
                 f'<span class="tag-recipient">To: {row["Instructor"]}</span>'
-                f'{loc_badge}'
-                f'{superpower_html}'
+                f"{loc_badge}"
+                f"{superpower_html}"
                 f'<span class="card-date">{row["Timestamp"]}</span>'
-                f'</div>'
+                f"</div>"
                 f'<div class="card-body-text">{row["Message"]}</div>'
                 f'<div class="card-author">— {row["Sender"]}</div>'
-                f'</div>'
+                f"</div>"
             )
             st.markdown(card_html, unsafe_allow_html=True)
 
-    # Footer Actions
     st.markdown("---")
     col_down1, col_down2 = st.columns([1, 1.4])
     with col_down1:
@@ -429,10 +468,13 @@ if not df.empty:
             use_container_width=True,
         )
     with col_down2:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="print-tip-box">
             <span>💡 <strong>Print Keepsake:</strong> Press <span class="key-badge">Cmd + P</span> or <span class="key-badge">Ctrl + P</span> to export as a formatted PDF book.</span>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 else:
     st.info("No messages posted yet. Be the first to share your gratitude above!")
