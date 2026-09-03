@@ -34,9 +34,8 @@ if st.session_state.get("show_celebration", False):
     st.toast("🎉 Your celebration note is live on the wall!", icon="🎈")
     st.session_state["show_celebration"] = False
 
-# UI Styling
-st.markdown(
-    """
+# UI Styling & Responsive Engine
+st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap');
 
@@ -53,13 +52,24 @@ st.markdown(
         margin: 0 auto !important;
     }
 
+    /* Print Architecture */
     @media print {
-        header, footer, .stButton, .stForm, [data-testid="stSidebar"], .no-print {
+        header, footer, .stButton, .stForm, [data-testid="stSidebar"], .no-print, [data-testid="stSelectbox"] {
             display: none !important;
         }
         .block-container {
             max-width: 100% !important;
             padding: 0 !important;
+        }
+        .hero-banner {
+            box-shadow: none !important;
+            border: 1px solid #6366f1 !important;
+            page-break-after: avoid;
+        }
+        .profile-card {
+            box-shadow: none !important;
+            border: 1px solid #cbd5e1 !important;
+            page-break-after: avoid;
         }
         .thank-you-card {
             break-inside: avoid;
@@ -68,8 +78,12 @@ st.markdown(
             margin-bottom: 16px !important;
             background: #ffffff !important;
         }
+        .print-tip-box {
+            display: none !important;
+        }
     }
 
+    /* Hero Banner */
     .hero-banner {
         background: linear-gradient(135deg, #4338ca 0%, #6366f1 35%, #8b5cf6 70%, #ec4899 100%);
         border-radius: clamp(18px, 3vw, 28px);
@@ -112,6 +126,7 @@ st.markdown(
         color: rgba(255, 255, 255, 0.96);
     }
 
+    /* Profile Cards */
     .profile-card {
         border-radius: 18px;
         padding: clamp(1.2rem, 3vw, 1.6rem);
@@ -171,6 +186,7 @@ st.markdown(
         margin: 1.2rem 0 0.8rem 0;
     }
 
+    /* Wall Cards */
     .thank-you-card {
         background: #ffffff;
         border-radius: 18px;
@@ -248,17 +264,17 @@ st.markdown(
         color: #1e293b;
     }
 
+    /* Print & Keepsake Callout */
     .print-tip-box {
         background: #f8fafc;
         border: 1.5px solid #cbd5e1;
-        border-radius: 12px;
-        padding: 0.85rem 1.2rem;
+        border-radius: 14px;
+        padding: 1.1rem 1.4rem;
         display: flex;
-        align-items: center;
-        gap: 10px;
+        flex-direction: column;
+        gap: 6px;
         font-size: 0.95rem;
         color: #1e293b;
-        font-weight: 500;
     }
 
     .key-badge {
@@ -269,17 +285,14 @@ st.markdown(
         font-family: 'JetBrains Mono', monospace;
         font-size: 0.85rem;
         font-weight: 700;
-        padding: 2px 6px;
-        border-radius: 5px;
+        padding: 2px 7px;
+        border-radius: 6px;
     }
 </style>
-""",
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
 
 # Hero Banner
-st.markdown(
-    """
+st.markdown("""
 <div class="hero-banner">
     <div class="hero-tag">✨ IF'26 AI Business Solutions Engineering Cohort</div>
     <h1 class="hero-title">Thank You, Jose & Alex! 🎓 💻</h1>
@@ -289,15 +302,22 @@ st.markdown(
         here is the love and gratitude from your Atlanta 🍑 and Los Angeles 🌴 fellows!
     </p>
 </div>
-""",
-    unsafe_allow_html=True,
+""", unsafe_allow_html=True)
+
+# Data Loading
+df = load_notes()
+
+# Filter Bar (Placed above profiles so instructors can tailor their screen and print view)
+st.markdown("### 📖 The Wall of Gratitude")
+filter_choice = st.selectbox(
+    "Filter notes and instructor card:",
+    ["All Messages (Both Instructors)", "Jose Only", "Alex Only"],
+    index=0
 )
 
-# Teacher Spotlight Cards
-col_jose, col_alex = st.columns(2)
-with col_jose:
-    st.markdown(
-        """
+# Instructor Spotlight Cards (Conditioned so printing Jose's view prints only Jose's card, and vice-versa)
+if filter_choice == "Jose Only":
+    st.markdown("""
     <div class="profile-card card-jose">
         <span class="role-badge badge-jose">Lead Instructor • New York 🗽</span>
         <div class="profile-name">🗽 Jose</div>
@@ -305,13 +325,9 @@ with col_jose:
             Architecture Guide • Code Mentor • Champion of Student Growth 🚀
         </div>
     </div>
-    """,
-        unsafe_allow_html=True,
-    )
-
-with col_alex:
-    st.markdown(
-        """
+    """, unsafe_allow_html=True)
+elif filter_choice == "Alex Only":
+    st.markdown("""
     <div class="profile-card card-alex">
         <span class="role-badge badge-alex">Teaching Assistant (TA) • Los Angeles 🌴</span>
         <div class="profile-name">🌴 Alex</div>
@@ -319,114 +335,117 @@ with col_alex:
             Lab Support Hero • Debugging Expert • Patient Problem-Solver 💡
         </div>
     </div>
-    """,
-        unsafe_allow_html=True,
-    )
+    """, unsafe_allow_html=True)
+else:
+    col_jose, col_alex = st.columns(2)
+    with col_jose:
+        st.markdown("""
+        <div class="profile-card card-jose">
+            <span class="role-badge badge-jose">Lead Instructor • New York 🗽</span>
+            <div class="profile-name">🗽 Jose</div>
+            <div class="profile-traits">
+                Architecture Guide • Code Mentor • Champion of Student Growth 🚀
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_alex:
+        st.markdown("""
+        <div class="profile-card card-alex">
+            <span class="role-badge badge-alex">Teaching Assistant (TA) • Los Angeles 🌴</span>
+            <div class="profile-name">🌴 Alex</div>
+            <div class="profile-traits">
+                Lab Support Hero • Debugging Expert • Patient Problem-Solver 💡
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-# Input Form
-st.markdown(
-    '<div class="form-header">💌 Add Your Note to the Celebration Board</div>',
-    unsafe_allow_html=True,
-)
+# Submission Form (Marked as no-print)
+with st.container():
+    st.markdown('<div class="form-header no-print">💌 Add Your Note to the Celebration Board</div>', unsafe_allow_html=True)
+    with st.form("celebration_form", clear_on_submit=True):
+        col_who, col_name, col_loc = st.columns([1.3, 1.4, 1.3])
 
-with st.form("celebration_form", clear_on_submit=True):
-    col_who, col_name, col_loc = st.columns([1.3, 1.4, 1.3])
-
-    with col_who:
-        instructor = st.selectbox(
-            "Who are you celebrating? *",
-            ["Both Jose & Alex 🌟", "Jose (Lead Instructor) 🗽", "Alex (TA) 🌴"],
-        )
-    with col_name:
-        sender = st.text_input(
-            "Your Name", placeholder="e.g., Maya Lin (or leave blank for Fellow)"
-        )
-    with col_loc:
-        location = st.selectbox(
-            "Fellow Cohort Location *",
-            ["Atlanta Cohort 🍑", "Los Angeles Cohort 🌴", "Other / Remote 🌐"],
-        )
-
-    superpower = st.selectbox(
-        "Superpower Highlight (pick a vibe that fits your note):",
-        [
-            "💡 Made complex AI and code click",
-            "🐛 Late-night debugging lifesaver",
-            "🌱 Endless patience and encouraging energy",
-            "🎯 Practical business & career guidance",
-            "☕ Inspiring, fun classroom atmosphere",
-            "⭐ All of the above!",
-        ],
-    )
-
-    message = st.text_area(
-        "Your Message of Gratitude & Memories *",
-        placeholder="Share a moment when Jose or Alex helped you overcome a blocker, an inspiring lecture, or well wishes for their future journeys...",
-        height=130,
-    )
-
-    submitted = st.form_submit_button(
-        "Post Celebration Note 🎉", use_container_width=True
-    )
-
-    if submitted:
-        if message.strip():
-            clean_instructor = (
-                "Jose & Alex"
-                if "Both" in instructor
-                else "Jose"
-                if "Jose" in instructor
-                else "Alex"
+        with col_who:
+            instructor = st.selectbox(
+                "Who are you celebrating? *",
+                ["Both Jose & Alex 🌟", "Jose (Lead Instructor) 🗽", "Alex (TA) 🌴"],
             )
-            existing_df = load_notes()
-            new_entry = pd.DataFrame(
-                [
-                    {
-                        "Timestamp": datetime.now().strftime("%b %d, %Y"),
-                        "Instructor": clean_instructor,
-                        "Sender": sender.strip()
-                        if sender.strip()
-                        else "Grateful Fellow",
-                        "Location": location,
-                        "Superpower": superpower,
-                        "Message": message.strip(),
-                    }
-                ]
+        with col_name:
+            sender = st.text_input(
+                "Your Name", placeholder="e.g., Maya Lin (or leave blank for Fellow)"
+            )
+        with col_loc:
+            location = st.selectbox(
+                "Fellow Cohort Location *",
+                ["Atlanta Cohort 🍑", "Los Angeles Cohort 🌴", "Other / Remote 🌐"],
             )
 
-            updated_df = pd.concat([existing_df, new_entry], ignore_index=True)
-            conn.update(data=updated_df)
+        superpower = st.selectbox(
+            "Superpower Highlight (pick a vibe that fits your note):",
+            [
+                "💡 Made complex AI and code click",
+                "🐛 Late-night debugging lifesaver",
+                "🌱 Endless patience and encouraging energy",
+                "🎯 Practical business & career guidance",
+                "☕ Inspiring, fun classroom atmosphere",
+                "⭐ All of the above!",
+            ],
+        )
 
-            st.session_state["show_celebration"] = True
-            st.rerun()
-        else:
-            st.error("Please enter a note before submitting.")
+        message = st.text_area(
+            "Your Message of Gratitude & Memories *",
+            placeholder="Share a moment when Jose or Alex helped you overcome a blocker, an inspiring lecture, or well wishes for their future journeys...",
+            height=130,
+        )
 
-st.divider()
+        submitted = st.form_submit_button(
+            "Post Celebration Note 🎉", use_container_width=True
+        )
 
-# Reading Wall Display
-df = load_notes()
+        if submitted:
+            if message.strip():
+                clean_instructor = (
+                    "Jose & Alex"
+                    if "Both" in instructor
+                    else "Jose"
+                    if "Jose" in instructor
+                    else "Alex"
+                )
+                existing_df = load_notes()
+                new_entry = pd.DataFrame(
+                    [
+                        {
+                            "Timestamp": datetime.now().strftime("%b %d, %Y"),
+                            "Instructor": clean_instructor,
+                            "Sender": sender.strip() if sender.strip() else "Grateful Fellow",
+                            "Location": location,
+                            "Superpower": superpower,
+                            "Message": message.strip(),
+                        }
+                    ]
+                )
 
-col_wall_title, col_filter = st.columns([1.8, 1.2])
-with col_wall_title:
-    st.markdown("### 📖 The Wall of Gratitude")
-with col_filter:
-    filter_choice = st.selectbox(
-        "Filter messages:",
-        ["All Messages", "Jose & Alex", "Jose", "Alex"],
-        label_visibility="collapsed",
-    )
+                updated_df = pd.concat([existing_df, new_entry], ignore_index=True)
+                conn.update(data=updated_df)
 
+                st.session_state["show_celebration"] = True
+                st.rerun()
+            else:
+                st.error("Please enter a note before submitting.")
+
+# Wall Entries Display
 if not df.empty and len(df) > 0:
-    if filter_choice != "All Messages":
-        view_df = df[df["Instructor"] == filter_choice]
+    if filter_choice == "Jose Only":
+        view_df = df[df["Instructor"].isin(["Jose", "Jose & Alex"])]
+    elif filter_choice == "Alex Only":
+        view_df = df[df["Instructor"].isin(["Alex", "Jose & Alex"])]
     else:
         view_df = df
 
     st.markdown(f"**Showing {len(view_df)} celebration note(s)**")
 
     if view_df.empty:
-        st.info(f"No notes specifically for {filter_choice} yet.")
+        st.info(f"No notes posted for this view yet.")
     else:
         for _, row in view_df.iloc[::-1].iterrows():
             loc_str = str(row.get("Location", ""))
@@ -456,25 +475,28 @@ if not df.empty and len(df) > 0:
                 f"</div>"
             )
             st.markdown(card_html, unsafe_allow_html=True)
-
-    st.markdown("---")
-    col_down1, col_down2 = st.columns([1, 1.4])
-    with col_down1:
-        st.download_button(
-            label="📥 Download All Messages (CSV)",
-            data=df.to_csv(index=False).encode("utf-8"),
-            file_name="jose_and_alex_gratitude_notes.csv",
-            mime="text/csv",
-            use_container_width=True,
-        )
-    with col_down2:
-        st.markdown(
-            """
-        <div class="print-tip-box">
-            <span>💡 <strong>Print Keepsake:</strong> Press <span class="key-badge">Cmd + P</span> or <span class="key-badge">Ctrl + P</span> to export as a formatted PDF book.</span>
-        </div>
-        """,
-            unsafe_allow_html=True,
-        )
 else:
     st.info("No messages posted yet. Be the first to share your gratitude above!")
+
+# Permanent Print & Download Keepsake Footer
+st.markdown("---")
+col_down1, col_down2 = st.columns([1, 1.4])
+
+with col_down1:
+    csv_bytes = df.to_csv(index=False).encode("utf-8") if not df.empty else b""
+    st.download_button(
+        label="📥 Download All Messages (CSV)",
+        data=csv_bytes,
+        file_name="jose_and_alex_gratitude_notes.csv",
+        mime="text/csv",
+        disabled=df.empty,
+        use_container_width=True,
+    )
+
+with col_down2:
+    st.markdown("""
+    <div class="print-tip-box">
+        <strong>🖨️ Create a Commemorative Keepsake Card / PDF:</strong>
+        <span>Filter the dropdown above to your name (e.g., <em>Jose Only</em> or <em>Alex Only</em>), then press <span class="key-badge">Cmd + P</span> (Mac) or <span class="key-badge">Ctrl + P</span> (Windows).</span>
+    </div>
+    """, unsafe_allow_html=True)
