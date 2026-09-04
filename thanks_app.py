@@ -14,7 +14,7 @@ st.set_page_config(
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxIo-3D5kVaWkMK7PyAjPYEJVbR0Bby7rXzVFLyNI6iF9iAmPsTH5WtiXN6tUt1Ju2OAw/exec"
 
 # Your published Google Sheet CSV endpoint
-CSV_READ_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRZe4efAZE_bSYAY1AAUqsJCEVV_QNpJtrvacQDNTk_wIxjtJOcY-s4MWDuF3KT3mdOYqu6chRQ_4n/pub?gid=0&single=true&output=csv"
+CSV_READ_URL = "https://docs.google.com/spreadsheets/d/1d0Bt42CFxDMHuaKPkggPRYtLV-nNkPXFq1Gm6bOxGqA/export?format=csv&gid=0"
 
 def load_notes():
     try:
