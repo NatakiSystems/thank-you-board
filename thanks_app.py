@@ -1,32 +1,27 @@
-from datetime import datetime
-import pandas as pd
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
+import pandas as pd
+import requests
+from datetime import datetime
 
 st.set_page_config(
-    page_title="IF'26 Thank You Jose & Alex! 🎓", page_icon="🎉", layout="wide"
+    page_title="IF'26 Thank You Jose & Alex! 🎓",
+    page_icon="🎉",
+    layout="wide"
 )
 
-# Connect to Google Sheets
-conn = st.connection("gsheets", type=GSheetsConnection)
+# --- BACKEND CONNECTIONS ---
+# Replace with the Web app URL you copied from Google Apps Script (ends in /exec)
+WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxIo-3D5kVaWkMK7PyAjPYEJVbR0Bby7rXzVFLyNI6iF9iAmPsTH5WtiXN6tUt1Ju2OAw/exec"
 
+# Your published Google Sheet CSV endpoint
+CSV_READ_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRZe4efAZE_bSYAY1AAUqsJCEVV_QNpJtrvacQDNTk_wIxjtJOcY-s4MWDuF3KT3mdOYqu6chRQ_4n/pub?gid=0&single=true&output=csv"
 
 def load_notes():
     try:
-        data = conn.read(ttl=5)
-        return data.dropna(how="all")
+        df = pd.read_csv(CSV_READ_URL)
+        return df.dropna(how="all")
     except Exception:
-        return pd.DataFrame(
-            columns=[
-                "Timestamp",
-                "Instructor",
-                "Sender",
-                "Location",
-                "Superpower",
-                "Message",
-            ]
-        )
-
+        return pd.DataFrame(columns=["Timestamp", "Instructor", "Sender", "Location", "Superpower", "Message"])
 
 # Celebration trigger on rerun
 if st.session_state.get("show_celebration", False):
@@ -52,7 +47,7 @@ st.markdown("""
         margin: 0 auto !important;
     }
 
-    /* Print Architecture */
+    /* Print Keepsake Rules */
     @media print {
         header, footer, .stButton, .stForm, [data-testid="stSidebar"], .no-print, [data-testid="stSelectbox"] {
             display: none !important;
@@ -126,7 +121,7 @@ st.markdown("""
         color: rgba(255, 255, 255, 0.96);
     }
 
-    /* Profile Cards */
+    /* Profiles */
     .profile-card {
         border-radius: 18px;
         padding: clamp(1.2rem, 3vw, 1.6rem);
@@ -186,7 +181,7 @@ st.markdown("""
         margin: 1.2rem 0 0.8rem 0;
     }
 
-    /* Wall Cards */
+    /* Cards */
     .thank-you-card {
         background: #ffffff;
         border-radius: 18px;
@@ -264,7 +259,6 @@ st.markdown("""
         color: #1e293b;
     }
 
-    /* Print & Keepsake Callout */
     .print-tip-box {
         background: #f8fafc;
         border: 1.5px solid #cbd5e1;
@@ -307,7 +301,7 @@ st.markdown("""
 # Data Loading
 df = load_notes()
 
-# Filter Bar (Placed above profiles so instructors can tailor their screen and print view)
+# Filter Bar
 st.markdown("### 📖 The Wall of Gratitude")
 filter_choice = st.selectbox(
     "Filter notes and instructor card:",
@@ -315,7 +309,7 @@ filter_choice = st.selectbox(
     index=0
 )
 
-# Instructor Spotlight Cards (Conditioned so printing Jose's view prints only Jose's card, and vice-versa)
+# Spotlight Cards
 if filter_choice == "Jose Only":
     st.markdown("""
     <div class="profile-card card-jose">
@@ -359,7 +353,7 @@ else:
         </div>
         """, unsafe_allow_html=True)
 
-# Submission Form (Marked as no-print)
+# Submission Form
 with st.container():
     st.markdown('<div class="form-header no-print">💌 Add Your Note to the Celebration Board</div>', unsafe_allow_html=True)
     with st.form("celebration_form", clear_on_submit=True):
@@ -405,35 +399,31 @@ with st.container():
         if submitted:
             if message.strip():
                 clean_instructor = (
-                    "Jose & Alex"
-                    if "Both" in instructor
-                    else "Jose"
-                    if "Jose" in instructor
+                    "Jose & Alex" if "Both" in instructor
+                    else "Jose" if "Jose" in instructor
                     else "Alex"
                 )
-                existing_df = load_notes()
-                new_entry = pd.DataFrame(
-                    [
-                        {
-                            "Timestamp": datetime.now().strftime("%b %d, %Y"),
-                            "Instructor": clean_instructor,
-                            "Sender": sender.strip() if sender.strip() else "Grateful Fellow",
-                            "Location": location,
-                            "Superpower": superpower,
-                            "Message": message.strip(),
-                        }
-                    ]
-                )
+                
+                payload = {
+                    "Timestamp": datetime.now().strftime("%b %d, %Y"),
+                    "Instructor": clean_instructor,
+                    "Sender": sender.strip() if sender.strip() else "Grateful Fellow",
+                    "Location": location,
+                    "Superpower": superpower,
+                    "Message": message.strip()
+                }
 
-                updated_df = pd.concat([existing_df, new_entry], ignore_index=True)
-                conn.update(data=updated_df)
-
-                st.session_state["show_celebration"] = True
-                st.rerun()
+                try:
+                    # Append row to Google Sheet
+                    requests.post(WEBHOOK_URL, json=payload, timeout=10)
+                    st.session_state["show_celebration"] = True
+                    st.rerun()
+                except Exception as err:
+                    st.error(f"Error submitting note: {err}")
             else:
                 st.error("Please enter a note before submitting.")
 
-# Wall Entries Display
+# Wall Display
 if not df.empty and len(df) > 0:
     if filter_choice == "Jose Only":
         view_df = df[df["Instructor"].isin(["Jose", "Jose & Alex"])]
@@ -445,7 +435,7 @@ if not df.empty and len(df) > 0:
     st.markdown(f"**Showing {len(view_df)} celebration note(s)**")
 
     if view_df.empty:
-        st.info(f"No notes posted for this view yet.")
+        st.info("No notes posted for this view yet.")
     else:
         for _, row in view_df.iloc[::-1].iterrows():
             loc_str = str(row.get("Location", ""))
@@ -478,7 +468,7 @@ if not df.empty and len(df) > 0:
 else:
     st.info("No messages posted yet. Be the first to share your gratitude above!")
 
-# Permanent Print & Download Keepsake Footer
+# Keepsake Footer
 st.markdown("---")
 col_down1, col_down2 = st.columns([1, 1.4])
 
